@@ -1,16 +1,18 @@
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List
 
 from .database import engine, Base, get_db
 from . import models, schemas
+from .llm import ask_llm
 
 app = FastAPI()
 
+# CORS for Vite (port 5173)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["http://localhost:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -41,8 +43,15 @@ def save_chat(
     return db_message
 
 
-# Get all chat messages
+# Get chat history
 @app.get("/chat/", response_model=List[schemas.ChatMessageResponse])
 def get_chat_history(db: Session = Depends(get_db)):
     messages = db.query(models.ChatMessage).order_by(models.ChatMessage.timestamp).all()
     return messages
+
+
+# Ask LLM
+@app.post("/ask/")
+def ask_ai(message: schemas.ChatMessageCreate):
+    reply = ask_llm(message.content)
+    return {"response": reply}

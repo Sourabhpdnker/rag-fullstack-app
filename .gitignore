@@ -1,0 +1,60 @@
+# -------------------------
+# Python / FastAPI
+# -------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+backend/.venv/
+*.db
+*.sqlite3
+
+# Virtual environment
+backend/.venv/
+
+# Environment variables
+.env
+.env.*
+*.env
+
+# -------------------------
+# Node / React
+# -------------------------
+node_modules/
+frontend/node_modules/
+dist/
+build/
+.next/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# -------------------------
+# macOS
+# -------------------------
+.DS_Store
+
+# -------------------------
+# VS Code
+# -------------------------
+.vscode/
+
+# -------------------------
+# Testing / Coverage
+# -------------------------
+coverage/
+htmlcov/
+.pytest_cache/
+
+# -------------------------
+# Misc
+# -------------------------
+*.log
+*.tmp
