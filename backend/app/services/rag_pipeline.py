@@ -1,4 +1,4 @@
-from .vector_store import get_vector_store
+from .vectorstore import get_vector_store
 from ..llm import ask_llm
 
 def run_rag(query: str):

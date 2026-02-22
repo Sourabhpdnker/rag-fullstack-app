@@ -2,11 +2,12 @@ from pydantic import BaseModel
 from datetime import datetime
 
 
+# Used when creating a message (from frontend)
 class ChatMessageCreate(BaseModel):
-    role: str
     content: str
 
 
+# Used when returning messages to frontend
 class ChatMessageResponse(BaseModel):
     id: int
     role: str
@@ -14,4 +15,4 @@ class ChatMessageResponse(BaseModel):
     timestamp: datetime
 
     class Config:
-        from_attributes = True
+        orm_mode = True
