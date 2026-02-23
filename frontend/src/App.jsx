@@ -8,6 +8,20 @@ function App() {
   const [loading, setLoading] = useState(false);
 
   // Fetch all messages
+  const clearChat = async () => {
+    await fetch("http://localhost:8000/reset-chat/", {
+      method: "POST",
+    });
+
+    setMessages([]);
+  };
+  const clearKnowledge = async () => {
+    await fetch("http://localhost:8000/reset-knowledge/", {
+      method: "POST",
+    });
+
+    alert("All uploaded PDFs deleted");
+  };
   const getMessages = async () => {
     try {
       const response = await fetch("http://127.0.0.1:8000/chat/");
@@ -92,6 +106,8 @@ function App() {
 
       {/* Chat Area */}
       <div className="flex-1 overflow-y-auto p-4">
+        <button onClick={clearChat}>Clear Chat</button>
+        <button onClick={clearKnowledge}>Clear Knowledge</button>
         <div className="max-w-3xl mx-auto">
           {messages.length === 0 && (
             <div className="text-center mt-20">

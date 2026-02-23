@@ -2,6 +2,11 @@ from fastapi import FastAPI, Depends, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List
+from fastapi import HTTPException
+from sqlalchemy.orm import Session
+from .database import get_db
+import shutil
+import os
 
 from .services.document_loader import ingest_pdf
 from .services.rag_pipeline import run_rag
@@ -51,14 +56,21 @@ def ask_ai(message: schemas.ChatMessageCreate):
 # Upload PDF and ingest
 @app.post("/upload/")
 async def upload_pdf(file: UploadFile = File(...)):
-    file_location = f"temp_{file.filename}"
+    try:
+        file_location = f"temp_{file.filename}"
 
-    with open(file_location, "wb") as f:
-        f.write(await file.read())
+        with open(file_location, "wb") as f:
+            f.write(await file.read())
 
-    chunk_count = ingest_pdf(file_location)
+        chunk_count = ingest_pdf(file_location)
 
-    return {"message": "Document ingested", "chunks": chunk_count}
+        if chunk_count == 0:
+            raise HTTPException(status_code=400, detail="No content extracted from PDF.")
+
+        return {"message": "Document ingested", "chunks": chunk_count}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # Ask RAG
@@ -67,25 +79,54 @@ def ask_rag(
     message: schemas.ChatMessageCreate,
     db: Session = Depends(get_db)
 ):
-    # Save user message
-    user_message = models.ChatMessage(
-        role="user",
-        content=message.content
-    )
-    db.add(user_message)
+    try:
+        if not message.content.strip():
+            raise HTTPException(status_code=400, detail="Message cannot be empty.")
+
+        # Save user message
+        user_message = models.ChatMessage(
+            role="user",
+            content=message.content
+        )
+        db.add(user_message)
+        db.commit()
+        db.refresh(user_message)
+
+        # Generate RAG response
+        answer_text = run_rag(message.content)
+
+        if not answer_text:
+            raise HTTPException(status_code=400, detail="No response generated.")
+
+        # Save assistant message
+        ai_message = models.ChatMessage(
+            role="assistant",
+            content=answer_text
+        )
+        db.add(ai_message)
+        db.commit()
+        db.refresh(ai_message)
+
+        return ai_message
+
+    except HTTPException:
+        raise
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+
+@app.post("/reset-chat/")
+def reset_chat(db: Session = Depends(get_db)):
+    db.query(models.ChatMessage).delete()
     db.commit()
-    db.refresh(user_message)
+    return {"message": "Chat history cleared successfully"}    
 
-    # Generate RAG response
-    answer_text = run_rag(message.content)
+@app.post("/reset-knowledge/")
+def reset_knowledge():
+    chroma_path = "chroma_db"
+    
+    if os.path.exists(chroma_path):
+        shutil.rmtree(chroma_path)
 
-    # Save assistant message
-    ai_message = models.ChatMessage(
-        role="assistant",
-        content=answer_text
-    )
-    db.add(ai_message)
-    db.commit()
-    db.refresh(ai_message)
-
-    return ai_message
+    return {"message": "All knowledge cleared successfully"}

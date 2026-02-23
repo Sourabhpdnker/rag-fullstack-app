@@ -23,8 +23,4 @@ def ingest_pdf(file_path: str):
 
     vectorstore = get_vector_store()
     vectorstore.add_documents(chunks)
-
-    # 🔥 THIS LINE IS IMPORTANT
-    vectorstore.persist()
-
     return len(chunks)
