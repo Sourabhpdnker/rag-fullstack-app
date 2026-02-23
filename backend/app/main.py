@@ -4,9 +4,10 @@ from sqlalchemy.orm import Session
 from typing import List
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
+from chromadb import Client
+from chromadb.config import Settings
+from app.services.vectorstore import get_vector_store
 from .database import get_db
-import shutil
-import os
 
 from .services.document_loader import ingest_pdf
 from .services.rag_pipeline import run_rag
@@ -122,11 +123,9 @@ def reset_chat(db: Session = Depends(get_db)):
     db.commit()
     return {"message": "Chat history cleared successfully"}    
 
+
 @app.post("/reset-knowledge/")
 def reset_knowledge():
-    chroma_path = "chroma_db"
-    
-    if os.path.exists(chroma_path):
-        shutil.rmtree(chroma_path)
-
-    return {"message": "All knowledge cleared successfully"}
+    vectorstore = get_vector_store()
+    vectorstore.delete_collection()
+    return {"message": "Knowledge cleared successfully."}
